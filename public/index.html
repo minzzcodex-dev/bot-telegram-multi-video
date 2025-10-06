@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Video & Pengaturan Grup</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+  <div class="bg-gray-800 p-6 rounded-xl shadow-xl w-[480px]">
+    <h2 class="text-xl mb-4 text-center">🎥 Upload Video & Pengaturan Grup</h2>
+
+    <form id="uploadForm" class="space-y-3" enctype="multipart/form-data">
+      <input type="text" name="title" placeholder="Judul Video" class="w-full p-2 rounded bg-gray-700">
+      <input type="file" name="video" class="w-full p-2 rounded bg-gray-700">
+      <input type="text" name="url" placeholder="Atau masukkan link video (opsional)" class="w-full p-2 rounded bg-gray-700">
+      <button class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded">Upload</button>
+    </form>
+
+    <hr class="my-4 border-gray-600">
+
+    <h3 class="text-lg mb-2">⚙️ Grup / Channel yang harus di-join</h3>
+    <textarea id="groups" class="w-full h-40 p-2 rounded bg-gray-700"></textarea>
+    <button id="saveGroups" class="w-full bg-green-600 hover:bg-green-700 mt-2 p-2 rounded">Simpan Grup</button>
+
+    <script>
+      document.getElementById('saveGroups').onclick = async () => {
+        const groups = JSON.parse(document.getElementById('groups').value);
+        await fetch('/save-groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ groups }) });
+        alert('✅ Grup tersimpan!');
+      };
+
+      document.getElementById('uploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        const res = await fetch('/upload', { method: 'POST', body: data });
+        document.body.innerHTML = await res.text();
+      };
+    </script>
+  </div>
+</body>
+</html>

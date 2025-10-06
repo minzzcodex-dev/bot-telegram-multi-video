@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>🎥 Upload Video & Pengaturan Grup</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 25% 25%, #0f172a, #020617);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+  </style>
+</head>
+<body class="flex items-start justify-center py-10">
+  <div class="w-full max-w-xl glass rounded-2xl shadow-2xl p-6 transition-all hover:shadow-blue-500/20">
+    <h2 class="text-3xl font-extrabold text-center mb-6 bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+      🎥 Upload Video & Pengaturan Grup
+    </h2>
+
+    <!-- Upload -->
+    <form id="uploadForm" class="space-y-4" enctype="multipart/form-data">
+      <input name="title" placeholder="Judul Video" class="w-full p-3 rounded-xl bg-slate-800/70 border border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-400" required>
+      
+      <label class="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-blue-400 transition">
+        <div class="flex flex-col items-center py-6 text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 mb-2 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+          <p>Klik untuk pilih video</p>
+        </div>
+        <input type="file" name="video" accept="video/*" class="hidden">
+      </label>
+
+      <input name="url" placeholder="Atau masukkan link video (opsional)" class="w-full p-3 rounded-xl bg-slate-800/70 border border-slate-700 focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-400">
+
+      <button class="w-full bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 p-3 rounded-xl font-semibold shadow-lg transition-all transform hover:scale-[1.02]">
+        🚀 Upload Sekarang
+      </button>
+    </form>
+
+    <div id="uploadResult" class="mt-5 text-center hidden"></div>
+
+    <div class="my-6 border-t border-slate-700"></div>
+
+    <!-- Groups -->
+    <h3 class="text-xl font-semibold mb-3 text-emerald-300 flex items-center gap-2">
+      ⚙️ Grup / Channel Wajib Join
+    </h3>
+    <div id="groupList" class="space-y-2 mb-3 text-sm"></div>
+
+    <div class="grid grid-cols-3 gap-2 mb-2">
+      <input id="gName" placeholder="Nama" class="p-2 rounded-lg bg-slate-800 border border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none placeholder:text-slate-400">
+      <input id="gId" placeholder="ID (-100...)" class="p-2 rounded-lg bg-slate-800 border border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none placeholder:text-slate-400">
+      <input id="gUrl" placeholder="Link t.me/..." class="p-2 rounded-lg bg-slate-800 border border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none placeholder:text-slate-400">
+    </div>
+
+    <button id="btnAddGroup" class="w-full bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 p-3 rounded-xl font-semibold shadow-lg transition-all transform hover:scale-[1.02]">
+      + Tambah Grup
+    </button>
+  </div>
+
+  <script>
+    const $ = (q)=>document.querySelector(q);
+
+    async function loadGroups(){
+      try {
+        const res = await fetch('/api/groups');
+        const groups = await res.json();
+        const box = $('#groupList');
+        box.innerHTML='';
+        if(!groups.length){ 
+          box.innerHTML = '<div class="text-slate-400 text-sm italic">Belum ada grup/channel.</div>'; 
+          return; 
+        }
+        groups.forEach((g,i)=>{
+          const row = document.createElement('div');
+          row.className='flex items-center justify-between bg-slate-800/70 rounded-lg px-3 py-2 border border-slate-700 hover:border-blue-500 transition';
+          row.innerHTML = `
+            <div>
+              <div class="font-medium text-emerald-300">${g.name}</div>
+              <div class="text-xs text-slate-400">${g.id} • <a class="underline hover:text-blue-400" href="${g.url}" target="_blank">${g.url}</a></div>
+            </div>
+            <button data-i="${i}" class="del bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-xs font-semibold">hapus</button>
+          `;
+          box.appendChild(row);
+        });
+        box.querySelectorAll('.del').forEach(btn=>{
+          btn.onclick = async ()=>{
+            const i = btn.getAttribute('data-i');
+            if(!confirm('Yakin hapus grup ini?')) return;
+            await fetch('/api/groups/'+i, {method:'DELETE'});
+            loadGroups();
+          }
+        });
+      } catch(err){
+        console.error(err);
+      }
+    }
+
+    $('#btnAddGroup').onclick = async ()=>{
+      const payload = { 
+        name: $('#gName').value.trim(), 
+        id: $('#gId').value.trim(), 
+        url: $('#gUrl').value.trim() 
+      };
+      if(!payload.name || !payload.id || !payload.url){ 
+        alert('Lengkapi nama, id, dan url'); 
+        return; 
+      }
+      await fetch('/api/groups', { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify(payload)
+      });
+      $('#gName').value = $('#gId').value = $('#gUrl').value = '';
+      loadGroups();
+    };
+
+    $('#uploadForm').onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const out = $('#uploadResult');
+      out.classList.remove('hidden');
+      out.innerHTML = '<div class="text-slate-400 animate-pulse">⏳ Mengunggah...</div>';
+      try {
+        const res = await fetch('/api/upload', { method:'POST', body: fd });
+        const data = await res.json().catch(()=>({ok:false}));
+        if(data.ok){
+          out.innerHTML = `<div class="bg-slate-800 rounded-lg p-4 border border-emerald-600 shadow-lg">
+            <p class="text-emerald-300 mb-1 font-semibold">✅ Link siap:</p>
+            <a class="underline text-blue-400 hover:text-blue-300 break-all" target="_blank" href="${data.link}">${data.link}</a>
+          </div>`;
+        } else {
+          out.innerHTML = `<div class="bg-red-700 rounded-lg p-3 text-sm">❌ Gagal: ${data.error||'unknown'}</div>`;
+        }
+      } catch(err){
+        out.innerHTML = `<div class="bg-red-700 rounded-lg p-3 text-sm">❌ Error koneksi</div>`;
+      }
+    };
+
+    loadGroups();
+  </script>
+</body>
+</html>
